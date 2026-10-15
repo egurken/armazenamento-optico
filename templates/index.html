@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataSheet - Armazenamento de Arquivos em Papel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .glass-card {
+      background: rgba(18, 24, 38, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 35px -5px rgba(6, 182, 212, 0.25);
+    }
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col selection:bg-cyan-500 selection:text-black">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+          <i data-lucide="file-code-2" class="w-6 h-6 text-black"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-bold tracking-tight text-white">DataSheet</h1>
+            <span class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">v1.0 A4</span>
+          </div>
+          <p class="text-xs text-slate-400">Armazenamento Óptico Físico em Papel de Alta Densidade</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="#ajuda" onclick="document.getElementById('modalAjuda').classList.remove('hidden')" class="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition flex items-center gap-1.5">
+          <i data-lucide="help-circle" class="w-4 h-4 text-cyan-400"></i>
+          <span>Como Funciona?</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl mx-auto px-6 py-10 flex-1 w-full">
+
+    <!-- Navegação de Abas -->
+    <div class="flex justify-center mb-8">
+      <div class="bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 inline-flex shadow-inner">
+        <button id="tabEncodeBtn" onclick="switchTab('encode')" class="px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-black shadow-lg shadow-cyan-500/20">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span>1. Gravar Arquivo no Papel</span>
+        </button>
+        <button id="tabDecodeBtn" onclick="switchTab('decode')" class="px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 text-slate-400 hover:text-white">
+          <i data-lucide="scan-line" class="w-4 h-4"></i>
+          <span>2. Ler Papel Escaneado</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ABA 1: CODIFICAR / GRAVAR -->
+    <div id="tabEncode" class="space-y-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Painel de Configuração -->
+        <div class="lg:col-span-7 space-y-6">
+          <div class="glass-card rounded-2xl p-7 shadow-2xl">
+            <h2 class="text-lg font-bold text-white mb-5 flex items-center gap-2">
+              <i data-lucide="upload-cloud" class="w-5 h-5 text-cyan-400"></i>
+              <span>Escolha o Arquivo para Gravar</span>
+            </h2>
+
+            <!-- Dropzone -->
+            <div id="dropzoneEncode" class="border-2 border-dashed border-slate-700 hover:border-cyan-500/80 rounded-2xl p-8 text-center cursor-pointer transition-all bg-slate-900/40 hover:bg-slate-900/80 group">
+              <input type="file" id="fileInputEncode" class="hidden">
+              <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-slate-800/80 group-hover:scale-110 flex items-center justify-center text-cyan-400 transition-transform border border-slate-700">
+                <i data-lucide="file-up" class="w-7 h-7"></i>
+              </div>
+              <p class="font-medium text-sm text-slate-200" id="encodeFileName">Clique ou arraste qualquer arquivo aqui</p>
+              <p class="text-xs text-slate-500 mt-1" id="encodeFileSize">PDF, ZIP, Imagem, Texto, Chaves, etc. (qualquer tamanho)</p>
+            </div>
+
+            <!-- Seleção de Modo de Cor -->
+            <div class="mt-6 space-y-3">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Modo de Cor da Impressora</label>
+              
+              <!-- Opção 1: 8 Cores (Recomendado) -->
+              <label class="block cursor-pointer">
+                <input type="radio" name="colorMode" value="color8" checked class="hidden peer" onchange="calculateRealtimeCapacity()">
+                <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/50 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 transition flex items-start justify-between">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-sm text-white">8 Cores Puras (RGB/CMY)</span>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">RECOMENDADO</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">O mais equilibrado: alta densidade (+50% que cinza) e imune a iluminação ruim.</p>
+                    <div class="flex gap-1.5 mt-2.5">
+                      <span class="swatch" style="background:#000"></span>
+                      <span class="swatch" style="background:#00f"></span>
+                      <span class="swatch" style="background:#0f0"></span>
+                      <span class="swatch" style="background:#0ff"></span>
+                      <span class="swatch" style="background:#f00"></span>
+                      <span class="swatch" style="background:#f0f"></span>
+                      <span class="swatch" style="background:#ff0"></span>
+                      <span class="swatch border border-slate-600" style="background:#fff"></span>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-xs font-mono text-cyan-400 font-bold block">3 bits / ponto</span>
+                    <span class="text-[11px] font-mono text-emerald-400 block mt-0.5">~45 KB por folha A4</span>
+                  </div>
+                </div>
+              </label>
+
+              <!-- Opção 2: 4 Tons de Cinza -->
+              <label class="block cursor-pointer">
+                <input type="radio" name="colorMode" value="gray4" class="hidden peer" onchange="calculateRealtimeCapacity()">
+                <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/50 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 transition flex items-start justify-between">
+                  <div>
+                    <span class="font-bold text-sm text-white">4 Tons de Cinza (P&B)</span>
+                    <p class="text-xs text-slate-400 mt-1">Funciona em qualquer impressora laser monocromática ou jato de tinta preta.</p>
+                    <div class="flex gap-1.5 mt-2.5">
+                      <span class="swatch" style="background:#101010"></span>
+                      <span class="swatch" style="background:#606060"></span>
+                      <span class="swatch" style="background:#B0B0B0"></span>
+                      <span class="swatch border border-slate-600" style="background:#F0F0F0"></span>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-xs font-mono text-slate-400 font-bold block">2 bits / ponto</span>
+                    <span class="text-[11px] font-mono text-slate-400 block mt-0.5">~30 KB por folha A4</span>
+                  </div>
+                </div>
+              </label>
+
+              <!-- Opção 3: 16 Cores -->
+              <label class="block cursor-pointer">
+                <input type="radio" name="colorMode" value="color16" class="hidden peer" onchange="calculateRealtimeCapacity()">
+                <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/50 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 transition flex items-start justify-between">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-sm text-white">16 Cores Calibradas</span>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30">MÁXIMA CAPACIDADE</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Dobra a capacidade do P&B por folha A4 (cabe 2x mais dados na mesma página).</p>
+                    <div class="flex gap-1 mt-2.5">
+                      <span class="swatch" style="background:#101010"></span>
+                      <span class="swatch" style="background:#10148C"></span>
+                      <span class="swatch" style="background:#108C14"></span>
+                      <span class="swatch" style="background:#108C8C"></span>
+                      <span class="swatch" style="background:#8C1410"></span>
+                      <span class="swatch" style="background:#8C148C"></span>
+                      <span class="swatch" style="background:#8C8C10"></span>
+                      <span class="swatch" style="background:#6E6E6E"></span>
+                      <span class="swatch" style="background:#B4B4B4"></span>
+                      <span class="swatch" style="background:#1E46F5"></span>
+                      <span class="swatch" style="background:#1EE628"></span>
+                      <span class="swatch" style="background:#1EE6F5"></span>
+                      <span class="swatch" style="background:#F5281E"></span>
+                      <span class="swatch" style="background:#F528F5"></span>
+                      <span class="swatch" style="background:#F5EB1E"></span>
+                      <span class="swatch border border-slate-600" style="background:#F5F5F5"></span>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-xs font-mono text-purple-400 font-bold block">4 bits / ponto</span>
+                    <span class="text-[11px] font-mono text-purple-400 block mt-0.5 font-bold">~60 KB por folha A4 (2x)</span>
+                  </div>
+                </div>
+              </label>
+
+              <!-- Opção 4: 32 Cores Calibradas (5 bits) -->
+              <label class="block cursor-pointer">
+                <input type="radio" name="colorMode" value="color32" class="hidden peer" onchange="calculateRealtimeCapacity()">
+                <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/50 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 transition flex items-start justify-between">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-sm text-white">32 Cores Calibradas</span>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">ULTRA CAPACIDADE</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">5 bits por ponto! Máxima densidade de dados físicos com 32 matizes calibrados.</p>
+                    <div class="flex flex-wrap gap-1 mt-2.5 max-w-xs">
+                      <span class="swatch" style="background:#101010"></span>
+                      <span class="swatch" style="background:#8C1414"></span>
+                      <span class="swatch" style="background:#964B10"></span>
+                      <span class="swatch" style="background:#878710"></span>
+                      <span class="swatch" style="background:#148C14"></span>
+                      <span class="swatch" style="background:#10876E"></span>
+                      <span class="swatch" style="background:#10878C"></span>
+                      <span class="swatch" style="background:#141E96"></span>
+                      <span class="swatch" style="background:#5A1491"></span>
+                      <span class="swatch" style="background:#911487"></span>
+                      <span class="swatch" style="background:#EB1E1E"></span>
+                      <span class="swatch" style="background:#F07D14"></span>
+                      <span class="swatch" style="background:#F0E114"></span>
+                      <span class="swatch" style="background:#82E614"></span>
+                      <span class="swatch" style="background:#19DC23"></span>
+                      <span class="swatch" style="background:#19DCE6"></span>
+                      <span class="swatch" style="background:#1E50F5"></span>
+                      <span class="swatch" style="background:#9628F5"></span>
+                      <span class="swatch" style="background:#F023DC"></span>
+                      <span class="swatch" style="background:#FA96A5"></span>
+                      <span class="swatch" style="background:#FAB987"></span>
+                      <span class="swatch" style="background:#FAF58C"></span>
+                      <span class="swatch" style="background:#96FAA5"></span>
+                      <span class="swatch" style="background:#96F5FA"></span>
+                      <span class="swatch" style="background:#8CBEFF"></span>
+                      <span class="swatch" style="background:#C3A0FF"></span>
+                      <span class="swatch" style="background:#FA9BF5"></span>
+                      <span class="swatch" style="background:#C8DC8C"></span>
+                      <span class="swatch" style="background:#4B4B4B"></span>
+                      <span class="swatch" style="background:#878787"></span>
+                      <span class="swatch" style="background:#C3C3C3"></span>
+                      <span class="swatch border border-slate-600" style="background:#FAFAFA"></span>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-xs font-mono text-pink-400 font-bold block">5 bits / ponto</span>
+                    <span class="text-[11px] font-mono text-pink-400 block mt-0.5 font-bold">~75-100 KB / folha (2.5x)</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Seletor de Tamanho do Ponto / Célula (Densidade) -->
+            <div class="mt-6 pt-5 border-t border-slate-800">
+              <div class="flex justify-between items-center mb-2">
+                <div class="flex items-center gap-1.5">
+                  <i data-lucide="grid" class="w-4 h-4 text-cyan-400"></i>
+                  <label class="text-xs font-semibold uppercase tracking-wider text-slate-300">Tamanho do Ponto (Resolução da Célula)</label>
+                </div>
+                <span id="cellSizeBadge" class="text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">3 px (Padrão Recomendado)</span>
+              </div>
+              <div class="grid grid-cols-4 gap-2 mt-2">
+                <label class="cursor-pointer">
+                  <input type="radio" name="cellSize" value="2" class="hidden peer" onchange="setCellSize(2)">
+                  <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 text-center transition">
+                    <span class="font-mono font-bold text-xs text-white block">2 px</span>
+                    <span class="text-[10px] text-slate-400 block">Alta Densidade</span>
+                    <span class="text-[9px] text-cyan-400 font-mono block mt-0.5">1080 cols</span>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="cellSize" value="3" checked class="hidden peer" onchange="setCellSize(3)">
+                  <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 text-center transition">
+                    <span class="font-mono font-bold text-xs text-white block">3 px</span>
+                    <span class="text-[10px] text-emerald-400 font-semibold block">Padrão A4</span>
+                    <span class="text-[9px] text-cyan-400 font-mono block mt-0.5">720 cols</span>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="cellSize" value="4" class="hidden peer" onchange="setCellSize(4)">
+                  <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 text-center transition">
+                    <span class="font-mono font-bold text-xs text-white block">4 px</span>
+                    <span class="text-[10px] text-slate-400 block">Alta Tolerância</span>
+                    <span class="text-[9px] text-cyan-400 font-mono block mt-0.5">540 cols</span>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="cellSize" value="5" class="hidden peer" onchange="setCellSize(5)">
+                  <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 text-center transition">
+                    <span class="font-mono font-bold text-xs text-white block">5 px</span>
+                    <span class="text-[10px] text-slate-400 block">Fácil Leitura</span>
+                    <span class="text-[9px] text-cyan-400 font-mono block mt-0.5">432 cols</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Seletor de Redundância Reed-Solomon (%) + Entrelaçamento 2D -->
+            <div class="mt-6 pt-5 border-t border-slate-800">
+              <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-1.5">
+                  <i data-lucide="shield-alert" class="w-4 h-4 text-cyan-400"></i>
+                  <label class="text-xs font-semibold uppercase tracking-wider text-slate-300">Proteção Reed-Solomon (ECC)</label>
+                </div>
+                <!-- Campo numérico com % editável livremente -->
+                <div class="flex items-center gap-1 bg-slate-900 px-3 py-1 rounded-lg border border-cyan-500/40">
+                  <input type="number" id="eccInput" min="5" max="50" step="1" value="20" oninput="setEcc(this.value)" class="w-8 bg-transparent text-right font-mono font-bold text-xs text-cyan-400 focus:outline-none">
+                  <span class="font-mono font-bold text-xs text-cyan-400">% ECC</span>
+                </div>
+              </div>
+              
+              <!-- Slider percentual contínuo e suave -->
+              <input type="range" id="eccSlider" min="5" max="50" step="1" value="20" oninput="setEcc(this.value)" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+              
+              <!-- Botões rápidos de preset -->
+              <div class="grid grid-cols-4 gap-2 mt-2.5">
+                <button type="button" onclick="setEcc(10)" class="ecc-btn py-1.5 px-2 rounded-lg text-[11px] font-mono font-medium border border-slate-800 bg-slate-900/60 hover:border-cyan-500/50 hover:bg-cyan-500/10 text-slate-400 transition" id="eccBtn10">10% (Densidade)</button>
+                <button type="button" onclick="setEcc(15)" class="ecc-btn py-1.5 px-2 rounded-lg text-[11px] font-mono font-medium border border-slate-800 bg-slate-900/60 hover:border-cyan-500/50 hover:bg-cyan-500/10 text-slate-400 transition" id="eccBtn15">15%</button>
+                <button type="button" onclick="setEcc(20)" class="ecc-btn py-1.5 px-2 rounded-lg text-[11px] font-mono font-medium border border-cyan-500/60 bg-cyan-500/20 text-cyan-300 transition" id="eccBtn20">20% (Padrão)</button>
+                <button type="button" onclick="setEcc(30)" class="ecc-btn py-1.5 px-2 rounded-lg text-[11px] font-mono font-medium border border-slate-800 bg-slate-900/60 hover:border-cyan-500/50 hover:bg-cyan-500/10 text-slate-400 transition" id="eccBtn30">30% (Blindado)</button>
+              </div>
+
+              <!-- Explicação do Entrelaçamento 2D -->
+              <div class="mt-3 p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/80 flex items-start gap-2 text-[11px] text-slate-400">
+                <i data-lucide="layers" class="w-4 h-4 text-cyan-400 mt-0.5 shrink-0"></i>
+                <span><strong class="text-slate-300">Entrelaçamento 2D:</strong> Se manchas, sujeira ou cortes cobrirem a porcentagem escolhida da folha, os danos são diluídos uniformemente entre todos os blocos, garantindo 100% de restauração sem perda.</span>
+              </div>
+            </div>
+
+            <!-- Toggle Texto -->
+            <div class="mt-5 flex items-center justify-between p-3.5 rounded-xl bg-slate-900/40 border border-slate-800">
+              <div>
+                <span class="text-xs font-semibold text-slate-200 block">Exibir linha de instrução para IA/humano no topo</span>
+                <p class="text-[11px] text-slate-400 mt-0.5">Mostra o hash de 10 dígitos e a instrução padronizada de auto-reconstrução.</p>
+              </div>
+              <input type="checkbox" id="showTextToggle" checked class="w-4 h-4 rounded text-cyan-500 focus:ring-cyan-400 focus:ring-offset-slate-900 cursor-pointer">
+            </div>
+
+            <!-- Card de Cálculo em Tempo Real de Capacidade por Folha (Full Width) -->
+            <div class="mt-6 p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-cyan-500/30 shadow-xl">
+              <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800/80">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
+                    <i data-lucide="gauge" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <span class="text-xs font-bold text-white uppercase tracking-wider block">Capacidade Estimada por Folha</span>
+                    <span class="text-[11px] text-slate-400 block">Cálculo matemático em tempo real</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span id="rtUsefulKb" class="text-2xl font-mono font-extrabold text-cyan-400 tracking-tight block">--</span>
+                  <span id="rtUsefulBytes" class="text-[11px] font-mono text-slate-400 block mt-0.5">--</span>
+                </div>
+              </div>
+
+              <!-- Barras de estatísticas da grade -->
+              <div class="grid grid-cols-3 gap-2.5 text-center">
+                <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+                  <span class="text-[10px] uppercase font-semibold text-slate-500 block">Grade Bruta</span>
+                  <span id="rtGridCapacity" class="font-mono font-bold text-slate-200 text-xs mt-1 block">--</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+                  <span class="text-[10px] uppercase font-semibold text-slate-500 block">Resolução Física</span>
+                  <span id="rtGridCells" class="font-mono font-bold text-slate-300 text-xs mt-1 block">--</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+                  <span class="text-[10px] uppercase font-semibold text-slate-500 block">Redundância RS</span>
+                  <span id="rtParityBytes" class="font-mono font-bold text-emerald-400 text-xs mt-1 block">--</span>
+                </div>
+              </div>
+
+              <!-- Estimativa para o Arquivo Selecionado -->
+              <div id="rtFileEstimate" class="hidden mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-1.5 text-slate-400">
+                  <i data-lucide="file-check-2" class="w-4 h-4 text-emerald-400"></i>
+                  <span>Estimativa para <strong id="rtFileNameLabel" class="text-white font-mono">arquivo</strong>:</span>
+                </div>
+                <span id="rtPagesNeeded" class="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">--</span>
+              </div>
+            </div>
+
+            <!-- Botão Gerar (Full Width) -->
+            <button id="btnEncode" onclick="runEncode()" class="mt-6 w-full py-4 rounded-xl font-bold text-sm bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2">
+              <i data-lucide="sparkles" class="w-5 h-5"></i>
+              <span>GERAR FOLHAS A4 PRONTAS PARA IMPRESSÃO</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Painel de Resultado da Codificação -->
+        <div class="lg:col-span-5">
+          <div id="encodeResultPlaceholder" class="glass-card rounded-2xl p-10 h-full flex flex-col items-center justify-center text-center text-slate-500 border-dashed">
+            <div class="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center mb-4 text-slate-600 border border-slate-800">
+              <i data-lucide="file-output" class="w-8 h-8"></i>
+            </div>
+            <p class="font-medium text-sm text-slate-400">O resultado da geração aparecerá aqui</p>
+            <p class="text-xs text-slate-600 mt-1 max-w-xs">Após clicar em gerar, você verá a prévia das folhas e poderá baixar o PDF pronto para imprimir.</p>
+          </div>
+
+          <!-- Card de Sucesso -->
+          <div id="encodeResultContent" class="hidden glass-card rounded-2xl p-7 space-y-6 glow-cyan">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <i data-lucide="check" class="w-4 h-4"></i>
+                </div>
+                <h3 class="font-bold text-white text-base">Folhas Geradas com Sucesso!</h3>
+              </div>
+              <span id="resTotalPages" class="text-xs font-mono font-bold bg-cyan-500/10 text-cyan-400 px-2.5 py-1 rounded-lg border border-cyan-500/30">1 Página</span>
+            </div>
+
+            <!-- Detalhes do Bloco -->
+            <div class="grid grid-cols-4 gap-2.5 text-xs">
+              <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                <span class="text-slate-500 block text-[10px] uppercase">ID Único</span>
+                <span id="resFileId" class="font-mono font-bold text-white text-sm">--</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                <span class="text-slate-500 block text-[10px] uppercase">Arquivo</span>
+                <span id="resFileName" class="font-medium text-slate-300 truncate block">--</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                <span class="text-slate-500 block text-[10px] uppercase">Modo / Ponto</span>
+                <span id="resModeCell" class="font-mono font-bold text-cyan-400 text-xs mt-0.5 block">--</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                <span class="text-slate-500 block text-[10px] uppercase">Reed-Solomon</span>
+                <span id="resEcc" class="font-mono font-bold text-emerald-400 text-sm">--</span>
+              </div>
+            </div>
+
+            <!-- SHA-256 -->
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span class="text-slate-500 block text-[10px] uppercase mb-1">Hash SHA-256 de Validação</span>
+              <span id="resSha256" class="font-mono text-[11px] text-cyan-400 break-all select-all block">--</span>
+            </div>
+
+            <!-- Pré-visualização da Folha -->
+            <div>
+              <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Pré-visualização da Folha Impressa</span>
+              <div class="relative rounded-xl overflow-hidden border border-slate-700 bg-white cursor-pointer group" onclick="openPreviewModal()">
+                <img id="resPreviewImg" src="" alt="Prévia da Folha" class="w-full h-72 object-cover object-top group-hover:scale-105 transition-transform duration-300">
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium gap-1.5 backdrop-blur-sm">
+                  <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                  <span>Clique para ampliar</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Painel de Impressão e Download -->
+            <div class="space-y-3 pt-2">
+              <!-- Seletor de Impressora Instalada no Windows -->
+              <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+                <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                  <span class="flex items-center gap-1.5">
+                    <i data-lucide="printer" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span>Impressora do Windows</span>
+                  </span>
+                  <span id="printerStatusBadge" class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">Pronta</span>
+                </label>
+                <div class="flex gap-2">
+                  <select id="selectPrinter" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono">
+                    <option value="">Carregando impressoras...</option>
+                  </select>
+                  <button type="button" onclick="loadPrinters()" title="Atualizar lista de impressoras" class="p-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Botão 1: Imprimir Direto no Windows (Spooler Nativo) -->
+              <button id="btnPrintWindows" onclick="printOnWindows()" class="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition">
+                <i data-lucide="printer" class="w-5 h-5"></i>
+                <span>Imprimir Direto no Windows (Spooler)</span>
+              </button>
+
+              <!-- Botão 2: Abrir Diálogo de Impressão no Navegador -->
+              <button id="btnPrintBrowser" onclick="printInBrowser()" class="w-full py-2.5 px-4 rounded-xl font-semibold text-xs border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 flex items-center justify-center gap-2 transition">
+                <i data-lucide="monitor" class="w-4 h-4"></i>
+                <span>Abrir Diálogo de Impressão (Navegador / Ctrl+P)</span>
+              </button>
+
+              <!-- Botão 3: Baixar PDF -->
+              <a id="btnDownloadPdf" href="#" class="w-full py-2.5 px-4 rounded-xl font-medium text-xs border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 flex items-center justify-center gap-2 transition">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Baixar Arquivo PDF (A4)</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA 2: DECODIFICAR / LER -->
+    <div id="tabDecode" class="hidden space-y-8">
+      <div class="max-w-2xl mx-auto space-y-6">
+        <div class="glass-card rounded-2xl p-8 shadow-2xl">
+          <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+            <i data-lucide="scan-line" class="w-5 h-5 text-cyan-400"></i>
+            <span>Ler Folhas Escaneadas ou Fotografadas</span>
+          </h2>
+          <p class="text-xs text-slate-400 mb-6">Arraste o PDF escaneado ou as fotos de todas as folhas (em qualquer ordem). O leitor lê o QR Code, retifica a folha, confere as cores e restaura o arquivo original.</p>
+
+          <!-- Dropzone Decode -->
+          <div id="dropzoneDecode" class="border-2 border-dashed border-slate-700 hover:border-cyan-500/80 rounded-2xl p-10 text-center cursor-pointer transition-all bg-slate-900/40 hover:bg-slate-900/80 group">
+            <input type="file" id="fileInputDecode" multiple class="hidden">
+            <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-slate-800/80 group-hover:scale-110 flex items-center justify-center text-cyan-400 transition-transform border border-slate-700">
+              <i data-lucide="camera" class="w-8 h-8"></i>
+            </div>
+            <p class="font-medium text-sm text-slate-200" id="decodeFilesSummary">Clique ou arraste o PDF ou fotos aqui</p>
+            <p class="text-xs text-slate-500 mt-1">Selecione uma ou mais páginas escaneadas (PNG, JPG, PDF)</p>
+          </div>
+
+          <div id="decodeFilesList" class="mt-4 space-y-1.5 max-h-40 overflow-y-auto"></div>
+
+          <!-- Botão Decodificar -->
+          <button id="btnDecode" onclick="runDecode()" class="mt-6 w-full py-4 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-black shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2">
+            <i data-lucide="unlock" class="w-5 h-5"></i>
+            <span>DECODIFICAR E RESTAURAR ARQUIVO</span>
+          </button>
+        </div>
+
+        <!-- Resultado do Decode -->
+        <div id="decodeResultContent" class="hidden glass-card rounded-2xl p-7 space-y-5 glow-cyan">
+          <div class="flex items-center gap-3 pb-4 border-b border-slate-800">
+            <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-white text-base">Arquivo Restaurado com 100% de Integridade!</h3>
+              <p class="text-xs text-slate-400">Checksum criptográfico SHA-256 validado com sucesso.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span class="text-slate-500 block text-[10px] uppercase">Nome do Arquivo</span>
+              <span id="decFileName" class="font-bold text-white truncate block text-sm">--</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span class="text-slate-500 block text-[10px] uppercase">Tamanho</span>
+              <span id="decFileSize" class="font-bold text-cyan-400 text-sm">--</span>
+            </div>
+          </div>
+
+          <a id="btnDownloadRecovered" href="#" class="w-full py-4 px-4 rounded-xl font-bold text-sm bg-emerald-400 hover:bg-emerald-300 text-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition">
+            <i data-lucide="download-cloud" class="w-5 h-5"></i>
+            <span>BAIXAR ARQUIVO ORIGINAL RECUPERADO</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal Ampliar Prévia -->
+  <div id="modalPreview" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-6" onclick="closePreviewModal()">
+    <div class="relative max-w-4xl max-h-[90vh] bg-slate-900 p-2 rounded-2xl border border-slate-700 shadow-2xl" onclick="event.stopPropagation()">
+      <button class="absolute top-4 right-4 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full p-2" onclick="closePreviewModal()">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      <img id="modalPreviewImg" src="" alt="Folha Completa" class="max-h-[85vh] rounded-xl object-contain">
+    </div>
+  </div>
+
+  <!-- Modal Ajuda / Como Funciona -->
+  <div id="modalAjuda" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 sm:p-6" onclick="document.getElementById('modalAjuda').classList.add('hidden')">
+    <div class="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-700 shadow-2xl space-y-5" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
+            <i data-lucide="info" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base">Como o DataSheet Funciona?</h3>
+            <span class="text-[11px] text-slate-400">Guia de arquitetura do armazenamento óptico em papel</span>
+          </div>
+        </div>
+        <button class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition" onclick="document.getElementById('modalAjuda').classList.add('hidden')">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs text-slate-300">
+        <!-- Item 1: Gravação Óptica -->
+        <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-mono font-bold text-[10px]">1</span>
+            <strong class="text-white text-sm">Armazenamento Óptico Físico em Papel A4</strong>
+          </div>
+          <p class="text-slate-400 leading-relaxed pl-7">
+            Seu arquivo digital é compactado e mapeado em uma matriz 2D de micro-células ópticas (de 2px a 5px). Suporta 4 modos de densidade:
+            <strong class="text-slate-200">4 Tons de Cinza</strong> (2 bits/pt),
+            <strong class="text-slate-200">8 Cores Puras</strong> (3 bits/pt),
+            <strong class="text-slate-200">16 Cores Calibradas</strong> (4 bits/pt) e
+            <strong class="text-pink-400">32 Cores Calibradas</strong> (5 bits/pt, densidade máxima de até ~100 KB por folha A4).
+          </p>
+        </div>
+
+        <!-- Item 2: Reed-Solomon e Entrelaçamento 2D -->
+        <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-[10px]">2</span>
+            <strong class="text-white text-sm">Motor Antifalhas: Reed-Solomon GF(2⁸) + Entrelaçamento 2D</strong>
+          </div>
+          <p class="text-slate-400 leading-relaxed pl-7">
+            Utiliza códigos corretores matemáticos Reed-Solomon reais com redundância ajustável (10% a 50%).
+            O <strong class="text-emerald-300">Entrelaçamento Helicoidal 2D</strong> distribui os blocos de dados por toda a área física da folha.
+            Se a folha sofrer manchas de café, rasgos, dobras ou sujeiras localizadas, o dano é diluído em pequenas frações entre centenas de blocos, sendo 100% regenerado sem perda de bits.
+          </p>
+        </div>
+
+        <!-- Item 3: QR Code e Prompt de Auto-Reconstrução -->
+        <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md bg-blue-500/20 text-blue-400 flex items-center justify-center font-mono font-bold text-[10px]">3</span>
+            <strong class="text-white text-sm">QR Code de Auto-Configuração & Instruções Universais</strong>
+          </div>
+          <p class="text-slate-400 leading-relaxed pl-7">
+            Um QR Code no topo de cada página contém os metadados universais em JSON estruturado (nome, paginação, ID único, modo de cor, tamanho do ponto, % de paridade ECC e hash SHA-256).
+            Opcionalmente, exibe instruções em texto plano permitindo que humanos ou modelos de IA reconstruam o algoritmo mesmo décadas no futuro.
+          </p>
+        </div>
+
+        <!-- Item 4: Calibração Espectral e Fiduciais -->
+        <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md bg-purple-500/20 text-purple-400 flex items-center justify-center font-mono font-bold text-[10px]">4</span>
+            <strong class="text-white text-sm">Marcadores de Canto & Fita Espectral de Calibração</strong>
+          </div>
+          <p class="text-slate-400 leading-relaxed pl-7">
+            Marcadores fiduciais nos 4 cantos corrigem automaticamente distorções de perspectiva, inclinação e rotação.
+            A fita de calibração no rodapé ensina ao leitor as tonalidades exatas impressas naquela folha específica, compensando variações de iluminação de fotos ou sensores de scanner.
+          </p>
+        </div>
+
+        <!-- Item 5: Restauração Desordenada e SHA-256 -->
+        <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center font-mono font-bold text-[10px]">5</span>
+            <strong class="text-white text-sm">Restauração em Qualquer Ordem & Checksum SHA-256</strong>
+          </div>
+          <p class="text-slate-400 leading-relaxed pl-7">
+            Folhas avulsas de documentos de múltiplas páginas podem ser escaneadas ou fotografadas em qualquer ordem. O decodificador organiza as páginas autonomamente e só libera o arquivo final após a confirmação matemática do hash criptográfico SHA-256 de 256 bits.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // Controle de Abas
+    function switchTab(tab) {
+      if (tab === 'encode') {
+        document.getElementById('tabEncode').classList.remove('hidden');
+        document.getElementById('tabDecode').classList.add('hidden');
+        document.getElementById('tabEncodeBtn').className = "px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-black shadow-lg shadow-cyan-500/20";
+        document.getElementById('tabDecodeBtn').className = "px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 text-slate-400 hover:text-white";
+      } else {
+        document.getElementById('tabEncode').classList.add('hidden');
+        document.getElementById('tabDecode').classList.remove('hidden');
+        document.getElementById('tabDecodeBtn').className = "px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-black shadow-lg shadow-emerald-500/20";
+        document.getElementById('tabEncodeBtn').className = "px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 text-slate-400 hover:text-white";
+      }
+      lucide.createIcons();
+    }
+
+    // Controle de Tamanho da Célula (Densidade)
+    let currentCellSize = 3;
+    function setCellSize(val) {
+      currentCellSize = parseInt(val) || 3;
+      const badge = document.getElementById('cellSizeBadge');
+      const labels = {
+        '2': '2 px (Alta Densidade - 1080 cols)',
+        '3': '3 px (Padrão A4 - 720 cols)',
+        '4': '4 px (Alta Tolerância - 540 cols)',
+        '5': '5 px (Fácil Leitura - 432 cols)'
+      };
+      if (badge) {
+        badge.textContent = labels[val] || `${val} px`;
+      }
+      calculateRealtimeCapacity();
+    }
+
+    // Controle de Redundância Reed-Solomon (ECC)
+    function setEcc(val) {
+      let v = parseInt(val);
+      if (isNaN(v)) return;
+      v = Math.max(5, Math.min(50, v));
+
+      const slider = document.getElementById('eccSlider');
+      const input = document.getElementById('eccInput');
+      if (slider && parseInt(slider.value) !== v) slider.value = v;
+      if (input && parseInt(input.value) !== v) input.value = v;
+
+      [10, 15, 20, 30].forEach(p => {
+        const btn = document.getElementById(`eccBtn${p}`);
+        if (btn) {
+          if (v === p) {
+            btn.className = "ecc-btn py-1.5 px-2 rounded-lg text-[11px] font-mono font-medium border border-cyan-500/60 bg-cyan-500/20 text-cyan-300 transition";
+          } else {
+            btn.className = "ecc-btn py-1.5 px-2 rounded-lg text-[11px] font-mono font-medium border border-slate-800 bg-slate-900/60 hover:border-cyan-500/50 hover:bg-cyan-500/10 text-slate-400 transition";
+          }
+        }
+      });
+      calculateRealtimeCapacity();
+    }
+
+    // Cálculo em Tempo Real de Capacidade Útil por Folha (KB)
+    function calculateRealtimeCapacity() {
+      const modeRadio = document.querySelector('input[name="colorMode"]:checked');
+      const mode = modeRadio ? modeRadio.value : 'color8';
+      const cellSize = currentCellSize || 3;
+      const eccInput = document.getElementById('eccInput');
+      const eccPercent = parseInt(eccInput ? eccInput.value : 20) || 20;
+
+      // Bits por célula
+      const bitsMap = { 'gray4': 2, 'color8': 3, 'color16': 4, 'color32': 5 };
+      const bitsPerCell = bitsMap[mode] || 3;
+
+      // Dimensões físicas da grade para A4 (2160 x 2520 px úteis)
+      const cols = Math.floor(2160 / cellSize / 4) * 4;
+      const rows = Math.floor(2520 / cellSize / 4) * 4;
+      const totalCells = cols * rows;
+
+      const totalBits = totalCells * bitsPerCell;
+      const totalGridBytes = Math.floor(totalBits / 8);
+
+      // Parâmetros Reed-Solomon GF(2^8) em blocos de 255 bytes
+      const eccP = Math.max(5, Math.min(50, eccPercent));
+      let nsym = Math.max(4, Math.min(240, Math.round(255 * eccP / 100)));
+      if (nsym % 2 !== 0) nsym += 1;
+      const k = 255 - nsym;
+
+      const numBlocks = Math.floor(totalGridBytes / 255);
+      const usefulChunkBytes = Math.max(k, numBlocks * k);
+
+      // Elementos do DOM
+      const rtUsefulKb = document.getElementById('rtUsefulKb');
+      const rtUsefulBytes = document.getElementById('rtUsefulBytes');
+      const rtGridCapacity = document.getElementById('rtGridCapacity');
+      const rtGridCells = document.getElementById('rtGridCells');
+      const rtParityBytes = document.getElementById('rtParityBytes');
+      const rtParityDesc = document.getElementById('rtParityDesc');
+
+      if (rtUsefulKb) {
+        if (usefulChunkBytes >= 1024 * 1024) {
+          rtUsefulKb.textContent = (usefulChunkBytes / (1024 * 1024)).toFixed(2) + ' MB / folha';
+        } else {
+          rtUsefulKb.textContent = (usefulChunkBytes / 1024).toFixed(1) + ' KB / folha';
+        }
+      }
+      if (rtUsefulBytes) rtUsefulBytes.textContent = usefulChunkBytes.toLocaleString('pt-BR') + ' bytes úteis';
+      if (rtGridCapacity) rtGridCapacity.textContent = (totalGridBytes / 1024).toFixed(1) + ' KB brutos';
+      if (rtGridCells) rtGridCells.textContent = totalCells.toLocaleString('pt-BR') + ' pts (' + cols + 'x' + rows + ')';
+      if (rtParityBytes) rtParityBytes.textContent = eccP + '% ECC (' + ((totalGridBytes - usefulChunkBytes) / 1024).toFixed(1) + ' KB)';
+      if (rtParityDesc) rtParityDesc.textContent = nsym + ' bytes paridade / bloco';
+
+      // Estimativa para o arquivo selecionado
+      const rtFileEstimate = document.getElementById('rtFileEstimate');
+      if (selectedEncodeFile) {
+        if (rtFileEstimate) rtFileEstimate.classList.remove('hidden');
+        const rtFileNameLabel = document.getElementById('rtFileNameLabel');
+        const rtPagesNeeded = document.getElementById('rtPagesNeeded');
+        if (rtFileNameLabel) {
+          const fn = selectedEncodeFile.name;
+          rtFileNameLabel.textContent = fn.length > 25 ? fn.substring(0, 22) + '...' : fn;
+        }
+        const estPages = Math.max(1, Math.ceil(selectedEncodeFile.size / usefulChunkBytes));
+        if (rtPagesNeeded) {
+          rtPagesNeeded.textContent = estPages === 1 ? '1 Folha A4 suficiente' : `~${estPages} Folhas A4 necessárias`;
+        }
+      } else {
+        if (rtFileEstimate) rtFileEstimate.classList.add('hidden');
+      }
+    }
+
+    // Dropzone Encode
+    const dropzoneEncode = document.getElementById('dropzoneEncode');
+    const fileInputEncode = document.getElementById('fileInputEncode');
+    let selectedEncodeFile = null;
+
+    dropzoneEncode.addEventListener('click', () => fileInputEncode.click());
+    fileInputEncode.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        setEncodeFile(e.target.files[0]);
+      }
+    });
+    dropzoneEncode.addEventListener('dragover', (e) => { e.preventDefault(); dropzoneEncode.classList.add('border-cyan-400'); });
+    dropzoneEncode.addEventListener('dragleave', () => dropzoneEncode.classList.remove('border-cyan-400'));
+    dropzoneEncode.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzoneEncode.classList.remove('border-cyan-400');
+      if (e.dataTransfer.files.length > 0) {
+        setEncodeFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    function setEncodeFile(file) {
+      selectedEncodeFile = file;
+      document.getElementById('encodeFileName').textContent = file.name;
+      document.getElementById('encodeFileSize').textContent = formatBytes(file.size);
+      calculateRealtimeCapacity();
+    }
+
+    // Dropzone Decode
+    const dropzoneDecode = document.getElementById('dropzoneDecode');
+    const fileInputDecode = document.getElementById('fileInputDecode');
+    let selectedDecodeFiles = [];
+
+    dropzoneDecode.addEventListener('click', () => fileInputDecode.click());
+    fileInputDecode.addEventListener('change', (e) => {
+      setDecodeFiles(Array.from(e.target.files));
+    });
+    dropzoneDecode.addEventListener('dragover', (e) => { e.preventDefault(); dropzoneDecode.classList.add('border-cyan-400'); });
+    dropzoneDecode.addEventListener('dragleave', () => dropzoneDecode.classList.remove('border-cyan-400'));
+    dropzoneDecode.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzoneDecode.classList.remove('border-cyan-400');
+      if (e.dataTransfer.files.length > 0) {
+        setDecodeFiles(Array.from(e.dataTransfer.files));
+      }
+    });
+
+    function setDecodeFiles(files) {
+      selectedDecodeFiles = files;
+      document.getElementById('decodeFilesSummary').textContent = `${files.length} arquivo(s) selecionado(s)`;
+      const listDiv = document.getElementById('decodeFilesList');
+      listDiv.innerHTML = files.map(f => `
+        <div class="text-xs p-2 rounded-lg bg-slate-900 border border-slate-800 flex justify-between">
+          <span class="truncate text-slate-300 font-mono">${f.name}</span>
+          <span class="text-slate-500 font-mono">${formatBytes(f.size)}</span>
+        </div>
+      `).join('');
+    }
+
+    // Estado da sessão atual
+    let currentSessionId = null;
+
+    // Ação: Executar Encode
+    async function runEncode() {
+      if (!selectedEncodeFile) {
+        alert("Por favor, selecione um arquivo primeiro!");
+        return;
+      }
+
+      const btn = document.getElementById('btnEncode');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> GERANDO FOLHAS A4...`;
+
+      const mode = document.querySelector('input[name="colorMode"]:checked').value;
+      const eccPercent = document.getElementById('eccInput') ? document.getElementById('eccInput').value : 20;
+      const copies = document.getElementById('copiesSlider') ? document.getElementById('copiesSlider').value : 5;
+      const showText = document.getElementById('showTextToggle').checked;
+
+      const formData = new FormData();
+      formData.append('file', selectedEncodeFile);
+      formData.append('mode', mode);
+      formData.append('copies', copies);
+      formData.append('ecc_percent', eccPercent);
+      formData.append('cell_size', currentCellSize);
+      formData.append('show_text', showText ? "true" : "false");
+
+      try {
+        const resp = await fetch('/api/encode', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (data.error) {
+          alert("Erro: " + data.error);
+        } else {
+          currentSessionId = data.session_id;
+          document.getElementById('encodeResultPlaceholder').classList.add('hidden');
+          const resCard = document.getElementById('encodeResultContent');
+          resCard.classList.remove('hidden');
+
+          document.getElementById('resTotalPages').textContent = `${data.total_pages} Folha(s) A4`;
+          document.getElementById('resFileId').textContent = data.file_id;
+          document.getElementById('resFileName').textContent = data.file_name;
+          if (document.getElementById('resModeCell')) {
+            document.getElementById('resModeCell').textContent = `${data.mode} (${data.cell_size || currentCellSize}px)`;
+          }
+          if (document.getElementById('resEcc')) {
+            document.getElementById('resEcc').textContent = `${data.ecc_percent || eccPercent}% ECC (2D)`;
+          }
+          document.getElementById('resSha256').textContent = data.full_sha256;
+
+          if (data.previews && data.previews.length > 0) {
+            document.getElementById('resPreviewImg').src = data.previews[0];
+            document.getElementById('modalPreviewImg').src = data.previews[0];
+          }
+
+          document.getElementById('btnDownloadPdf').href = data.pdf_url;
+        }
+      } catch (err) {
+        alert("Falha na comunicação com o servidor: " + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="sparkles" class="w-5 h-5"></i><span>GERAR FOLHAS A4 PRONTAS PARA IMPRESSÃO</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    // Gerenciamento de Impressoras do Windows
+    let installedPrinters = [];
+
+    async function loadPrinters() {
+      const select = document.getElementById('selectPrinter');
+      const badge = document.getElementById('printerStatusBadge');
+      if (!select) return;
+      select.innerHTML = '<option value="">Buscando impressoras do Windows...</option>';
+      try {
+        const resp = await fetch('/api/printers');
+        const data = await resp.json();
+        installedPrinters = data.printers || [];
+        if (installedPrinters.length === 0) {
+          select.innerHTML = '<option value="">Impressora Padrão do Windows</option>';
+          if (badge) badge.textContent = "Padrão";
+          return;
+        }
+        select.innerHTML = installedPrinters.map(p => {
+          const isDef = p.is_default ? ' selected' : '';
+          const defLabel = p.is_default ? ' ★ (Padrão)' : '';
+          return `<option value="${p.name}"${isDef}>${p.name}${defLabel}</option>`;
+        }).join('');
+        if (badge) badge.textContent = `${installedPrinters.length} conectada(s)`;
+      } catch (e) {
+        select.innerHTML = '<option value="">Impressora Padrão do Windows</option>';
+      }
+    }
+
+    // Ação: Imprimir diretamente pelo Windows (.NET Spooler)
+    async function printOnWindows() {
+      if (!currentSessionId) {
+        alert("Nenhum documento gerado para impressão.");
+        return;
+      }
+      const select = document.getElementById('selectPrinter');
+      const chosenPrinter = select ? select.value : '';
+
+      const btn = document.getElementById('btnPrintWindows');
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> Enviando para a fila de impressão...`;
+      try {
+        const resp = await fetch(`/api/print_windows/${currentSessionId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ printer_name: chosenPrinter })
+        });
+        const res = await resp.json();
+        if (res.error) {
+          alert("Aviso: " + res.error);
+        } else {
+          alert("✅ " + (res.message || "Enviado com sucesso para a fila de impressão do Windows!"));
+        }
+      } catch (e) {
+        alert("Erro ao comunicar com o Windows: " + e);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        lucide.createIcons();
+      }
+    }
+
+    // Ação: Abrir diálogo de impressão no navegador (Ctrl + P)
+    function printInBrowser() {
+      if (!currentSessionId) {
+        alert("Nenhum documento gerado para impressão.");
+        return;
+      }
+      window.open(`/print/${currentSessionId}`, '_blank');
+    }
+
+    // Ação: Executar Decode
+    async function runDecode() {
+      if (!selectedDecodeFiles || selectedDecodeFiles.length === 0) {
+        alert("Por favor, selecione os arquivos escaneados ou o PDF!");
+        return;
+      }
+
+      const btn = document.getElementById('btnDecode');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> PROCESSANDO FOLHAS E RETIFICANDO...`;
+
+      const formData = new FormData();
+      for (const f of selectedDecodeFiles) {
+        formData.append('files', f);
+      }
+
+      try {
+        const resp = await fetch('/api/decode', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (data.error) {
+          alert("Aviso: " + data.error);
+        } else {
+          const resCard = document.getElementById('decodeResultContent');
+          resCard.classList.remove('hidden');
+
+          document.getElementById('decFileName').textContent = data.file_name;
+          document.getElementById('decFileSize').textContent = formatBytes(data.raw_size);
+          document.getElementById('btnDownloadRecovered').href = data.download_url;
+        }
+      } catch (err) {
+        alert("Falha na comunicação com o servidor: " + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="unlock" class="w-5 h-5"></i><span>DECODIFICAR E RESTAURAR ARQUIVO</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    function openPreviewModal() {
+      document.getElementById('modalPreview').classList.remove('hidden');
+    }
+
+    function closePreviewModal() {
+      document.getElementById('modalPreview').classList.add('hidden');
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // Inicializa o cálculo em tempo real e carrega impressoras
+    calculateRealtimeCapacity();
+    loadPrinters();
+  </script>
+</body>
+</html>

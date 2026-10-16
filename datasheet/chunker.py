@@ -11,6 +11,7 @@ from datasheet.config import (
     PageLayout,
     DEFAULT_COPIES,
     DEFAULT_ECC_PERCENT,
+    DEFAULT_CELL_GAP,
     MODE_GRAY4
 )
 from datasheet.palette import get_bits_per_cell
@@ -115,7 +116,8 @@ def split_file_to_chunks(data: bytes, file_name: str, layout: PageLayout) -> Lis
             comp_size=comp_size,
             full_sha256=full_sha256,
             chunk_len=chunk_len,
-            chunk_sha256=chunk_sha
+            chunk_sha256=chunk_sha,
+            cell_gap=getattr(layout, 'cell_gap', DEFAULT_CELL_GAP)
         )
 
         # 1. Aplica codificação Reed-Solomon ou repetição

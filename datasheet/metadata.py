@@ -19,6 +19,7 @@ from datasheet.config import (
     DEFAULT_GRID_COLS,
     DEFAULT_GRID_ROWS,
     DEFAULT_CELL_PX,
+    DEFAULT_CELL_GAP,
     DEFAULT_COPIES,
     DEFAULT_ECC_PERCENT,
     MODE_GRAY4
@@ -30,7 +31,7 @@ class PageMetadata:
     file_id: str          # Hash curto único de 10 dígitos hexadecimais (ex: A3F8B29C10)
     page: int             # Página atual (1-based)
     pages: int            # Total de páginas
-    mode: str             # gray4, color8, color16
+    mode: str             # gray4, color8, color16, color32
     copies: int           # Fator de repetição legado (ex: 5)
     ecc_percent: int      # Porcentagem de paridade Reed-Solomon ECC (ex: 20%)
     grid_cols: int        # Colunas da grade
@@ -42,6 +43,7 @@ class PageMetadata:
     full_sha256: str      # SHA-256 do arquivo original completo (64 hex)
     chunk_len: int        # Tamanho em bytes do chunk compactado desta folha
     chunk_sha256: str     # SHA-256 do chunk desta folha (para validação independente)
+    cell_gap: int = DEFAULT_CELL_GAP  # Borda branca anti-sangramento entre células (0, 1 ou 2 px)
 
     def to_json(self) -> str:
         """
@@ -54,6 +56,7 @@ class PageMetadata:
             "total_pages": self.pages,
             "mode": self.mode,
             "cell_size": self.cell_px,
+            "cell_gap": self.cell_gap,
             "ecc_percent": self.ecc_percent,
             "filename": self.file_name,
             "raw_size": self.raw_size,
@@ -82,6 +85,7 @@ class PageMetadata:
         grid_cols = int(d.get("grid_cols", d.get("w", 720)))
         grid_rows = int(d.get("grid_rows", d.get("h", 840)))
         cell_px = int(d.get("cell_size", d.get("cell_px", d.get("s", 3))))
+        cell_gap = int(d.get("cell_gap", d.get("gap", DEFAULT_CELL_GAP)))
         file_name = d.get("filename", d.get("file_name", d.get("fn", "documento")))
         raw_size = int(d.get("raw_size", d.get("raw", 0)))
         comp_size = int(d.get("compressed_size", d.get("comp_size", d.get("comp", 0))))
@@ -106,7 +110,8 @@ class PageMetadata:
             comp_size=comp_size,
             full_sha256=full_sha256,
             chunk_len=chunk_len,
-            chunk_sha256=chunk_sha256
+            chunk_sha256=chunk_sha256,
+            cell_gap=cell_gap
         )
 
 

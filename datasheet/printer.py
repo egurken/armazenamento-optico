@@ -50,7 +50,9 @@ def get_windows_printers():
 def print_images_windows(image_paths, printer_name=None):
     """
     Envia uma lista de imagens (PNGs em resolução A4 300 DPI)
-    diretamente para a impressora do Windows via .NET System.Drawing.Printing.PrintDocument.
+    diretamente para a impressora do Windows via .NET System.Drawing.Printing.PrintDocument,
+    utilizando interpolação NearestNeighbor (vizinho mais próximo) para evitar borramento
+    e sobreposição de cores entre células adjacentes.
     """
     if sys.platform != "win32":
         return False, "Impressão direta só é suportada no Windows."
@@ -80,7 +82,7 @@ def print_images_windows(image_paths, printer_name=None):
         exit 1
     }}
 
-    # Configuração de alta fidelidade para papel A4
+    # Configuração de alta fidelidade para papel A4 sem margens adicionais de escalonamento
     $doc.DefaultPageSettings.Margins = New-Object System.Drawing.Printing.Margins(0, 0, 0, 0)
     $doc.DefaultPageSettings.Color = $true
     $doc.OriginAtMargins = $true
@@ -88,6 +90,14 @@ def print_images_windows(image_paths, printer_name=None):
     foreach ($p in $doc.PrinterSettings.PaperSizes) {{
         if ($p.PaperName -like "*A4*") {{
             $doc.DefaultPageSettings.PaperSize = $p
+            break
+        }}
+    }}
+
+    # Seleciona a resolução máxima (High) suportada pelo driver para maior nitidez de ponto
+    foreach ($res in $doc.PrinterSettings.PrinterResolutions) {{
+        if ($res.Kind -eq [System.Drawing.Printing.PrinterResolutionKind]::High) {{
+            $doc.DefaultPageSettings.PrinterResolution = $res
             break
         }}
     }}
@@ -105,8 +115,12 @@ def print_images_windows(image_paths, printer_name=None):
                 $rect = $e.PageBounds
             }}
 
-            $e.Graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-            $e.Graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+            # CRÍTICO: NearestNeighbor + PixelOffsetMode::Half evita interpolação bicúbica
+            # que mistura as cores de células vizinhas na hora de imprimir
+            $e.Graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::NearestNeighbor
+            $e.Graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::Half
+            $e.Graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::None
+            $e.Graphics.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::AssumeLinear
             $e.Graphics.DrawImage($img, $rect)
 
             $img.Dispose()

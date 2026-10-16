@@ -20,7 +20,7 @@ import cv2
 def main():
     parser = argparse.ArgumentParser(
         prog="datasheet",
-        description="DataSheet - Armazenamento Óptico em Papel (4 tons de cinza, 8 cores e 16 cores)"
+        description="DataSheet - Armazenamento Óptico em Papel (4 tons de cinza, 8 cores, 16 cores e 32 cores)"
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -33,7 +33,7 @@ def main():
         "--mode",
         choices=SUPPORTED_MODES,
         default=MODE_GRAY4,
-        help="Modo de modulação: gray4 (padrão P&B), color8 (8 cores RGB/CMY) ou color16 (16 cores)"
+        help="Modo de modulação: gray4 (padrão P&B), color8 (8 cores RGB/CMY), color16 (16 cores) ou color32 (32 cores)"
     )
     p_encode.add_argument(
         "--copies",
@@ -52,7 +52,14 @@ def main():
         type=int,
         default=3,
         choices=[2, 3, 4, 5, 6],
-        help="Tamanho da célula em pixels a 300 DPI (2=alta densidade, 3=padrão, 4=alta robustez, 5=fácil leitura)"
+        help="Tamanho da célula em pixels a 300 DPI (2=alta densidade, 3=padrão, 4=alta robustez, 5=fácil leitura, 6=máxima nitidez)"
+    )
+    p_encode.add_argument(
+        "--cell-gap",
+        type=int,
+        default=0,
+        choices=[0, 1, 2],
+        help="Espaçamento branco anti-sangramento entre células (0=sem borda, 1=1px recomendado para jato de tinta, 2=2px isolamento máximo)"
     )
     p_encode.add_argument(
         "--no-text",
@@ -82,7 +89,7 @@ def main():
             pdf_out = f"{base}_datasheet.pdf"
 
         print(f"Codificando arquivo: {args.input}")
-        print(f"Modo: {args.mode} | Reed-Solomon ECC: {args.ecc}% | Célula: {args.cell_size}px | Formato: A4")
+        print(f"Modo: {args.mode} | Reed-Solomon ECC: {args.ecc}% | Célula: {args.cell_size}px (Gap: {args.cell_gap}px) | Formato: A4")
         pages = encode_file(
             input_path=args.input,
             output_pdf_path=pdf_out,
@@ -91,7 +98,8 @@ def main():
             copies=args.copies,
             ecc_percent=args.ecc,
             cell_size=args.cell_size,
-            show_text=not args.no_text
+            show_text=not args.no_text,
+            cell_gap=args.cell_gap
         )
         print(f"[Sucesso] {len(pages)} página(s) gerada(s).")
         if pdf_out:
@@ -135,7 +143,7 @@ def main():
         print(f"Fator de Redundância:       {meta.copies} cópias")
         print(f"Tamanho Bruto:              {meta.raw_size} bytes")
         print(f"Tamanho Comprimido:         {meta.comp_size} bytes")
-        print(f"Grade:                      {meta.grid_cols}x{meta.grid_rows} células ({meta.cell_px}px/célula)")
+        print(f"Grade:                      {meta.grid_cols}x{meta.grid_rows} células ({meta.cell_px}px/célula, gap {getattr(meta, 'cell_gap', 0)}px)")
         print(f"SHA-256 Global:             {meta.full_sha256}")
         print(f"SHA-256 do Bloco:           {meta.chunk_sha256}")
         print("==========================\n")

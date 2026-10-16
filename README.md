@@ -34,8 +34,14 @@ O **DataSheet** explora a conversão de arquivos digitais (documentos, chaves cr
   - Cabeçalho legível com metadados estruturados (identificador do arquivo, SHA-256 original, modo de cor, tamanho da célula, blocos).
 - **Fita Espectral de Calibração:**
   - Amostras de referência no rodapé de cada folha para calibrar balanço de branco e distorção espectral introduzida pelo scanner/câmera.
+- **Tratamento Anti-Sangramento de Tinta (*Ink Bleeding*) & Nitidez de Impressão:**
+  - **Corner Relief (0 px):** alívio de saturação nos 4 cantos diagonais de cada célula 3×3, eliminando o acúmulo de líquido nas quinas sem reduzir a grade de 720×840 (capacidade máxima mantida).
+  - **Isolamento de Célula (Borda Branca):** opções de 1 px ou 2 px de contenção física branca entre células vizinhas.
+  - **Ink Limiting na Paleta:** piso de carga ajustado nas cores compostas secundárias para impressoras tanque de tinta (como Epson EcoTank L4260), evitando saturação de 200%-280% de tinta líquida em papel sulfite comum.
+  - **Cancelamento de Interferência Lateral 2D (Cross-Talk Cancellation):** descorrelação espectral no decodificador para subtrair contaminação de tinta de células vizinhas antes do Reed-Solomon.
+  - **Pipeline de Impressão Pixel-Perfect:** desativação de interpolação no Spooler (`NearestNeighbor`) e no PDF (`/Interpolate false`).
 - **Interface Web Interativa:**
-  - Desenvolvida em Flask com preview visual em tempo real, estimativa de KB por folha, seleção de parâmetros e decodificador drag-and-drop.
+  - Desenvolvida em Flask com preview visual em tempo real, estimativa de KB por folha, seleção de parâmetros, seletor de isolamento anti-sangramento e decodificador drag-and-drop.
 
 ---
 
@@ -76,6 +82,9 @@ Em seguida, abra o navegador em: [http://127.0.0.1:5000](http://127.0.0.1:5000)
 ```bash
 # Modo 8 cores com células de 5px e 20% de Reed-Solomon
 python -m datasheet.cli encode backup.zip -o backup_datasheet.pdf --mode color8 --cell-size 5 --ecc 20
+
+# Modo 8 cores com isolamento anti-sangramento de 1px (borda branca)
+python -m datasheet.cli encode backup.zip -o backup_datasheet.pdf --mode color8 --cell-size 4 --cell-gap 1
 
 # Modo tons de cinza (gray4)
 python -m datasheet.cli encode chaves.tar -o chaves.pdf --mode gray4 --copies 5

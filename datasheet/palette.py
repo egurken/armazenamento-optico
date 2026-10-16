@@ -1,9 +1,13 @@
 """
 Módulo de paletas de cores, modulação e demodulação de símbolos.
+Calibrado com controle de carga hídrica (Ink Limiting) para impressoras Tanque de Tinta
+(como Epson EcoTank L4260), reduzindo o espalhamento capilar nas cores secundárias/escuras
+sem perder separação espectral.
 Suporta:
 - gray4: 4 tons de cinza (2 bits/célula)
-- color8: 8 cores dos cantos do cubo RGB/CMY (3 bits/célula)
+- color8: 8 cores dos cantos do cubo RGB/CMY com alívio de carga CMY (3 bits/célula)
 - color16: 16 cores otimizadas com dupla luminância (4 bits/célula)
+- color32: 32 cores calibradas (5 bits/célula)
 """
 
 from typing import List, Tuple
@@ -18,78 +22,79 @@ PALETTE_GRAY4 = np.array([
     [240, 240, 240]
 ], dtype=np.uint8)
 
-# Paleta color8: 8 vértices do cubo RGB (R, G, B binários)
+# Paleta color8: 8 vértices RGB/CMY com Ink Limiting nas secundárias (R, G, B)
+# Evita 200% de carga líquida CMY no papel sulfite em células de 3px
 PALETTE_COLOR8 = np.array([
-    [16, 16, 16],      # 000: Preto
-    [16, 16, 240],     # 001: Azul
-    [16, 240, 16],     # 010: Verde
-    [16, 240, 240],    # 011: Ciano
-    [240, 16, 16],     # 100: Vermelho
-    [240, 16, 240],    # 101: Magenta
-    [240, 240, 16],    # 110: Amarelo
-    [240, 240, 240]     # 111: Branco
+    [16, 16, 16],      # 000: Preto (usa tinta preta pigmentada K)
+    [42, 46, 242],     # 001: Azul (alívio de carga C+M para evitar sangramento)
+    [38, 232, 42],     # 010: Verde (alívio de carga C+Y)
+    [22, 236, 242],    # 011: Ciano (canal C puro, baixo espalhamento)
+    [242, 42, 38],     # 100: Vermelho (alívio de carga M+Y)
+    [240, 34, 236],    # 101: Magenta (canal M puro)
+    [245, 240, 24],    # 110: Amarelo (canal Y puro)
+    [248, 248, 248]    # 111: Branco
 ], dtype=np.uint8)
 
-# Paleta color16: 8 matizes em baixa luminância + 8 matizes em alta luminância
+# Paleta color16: 8 matizes em baixa luminância (com Ink Limiting) + 8 matizes em alta luminância
 PALETTE_COLOR16 = np.array([
-    # Baixa Luminância (Escuros / 0..7)
+    # Baixa Luminância (Escuros / 0..7) - piso elevado para evitar encharcamento CMYK
     [16, 16, 16],       # 0: Preto
-    [16, 20, 140],      # 1: Azul escuro
-    [16, 140, 20],      # 2: Verde escuro
-    [16, 140, 140],     # 3: Ciano escuro
-    [140, 20, 16],      # 4: Vermelho escuro
-    [140, 20, 140],     # 5: Magenta escuro
-    [140, 140, 16],     # 6: Amarelo escuro / Oliva
-    [110, 110, 110],    # 7: Cinza médio
+    [32, 38, 155],      # 1: Azul escuro
+    [32, 150, 38],      # 2: Verde escuro
+    [28, 150, 152],     # 3: Ciano escuro
+    [155, 36, 32],      # 4: Vermelho escuro
+    [152, 32, 152],     # 5: Magenta escuro
+    [150, 148, 30],     # 6: Amarelo escuro / Oliva
+    [112, 112, 112],    # 7: Cinza médio
     # Alta Luminância (Claros / 8..15)
-    [180, 180, 180],    # 8: Cinza claro
-    [30, 70, 245],      # 9: Azul brilhante
-    [30, 230, 40],      # 10: Verde brilhante
-    [30, 230, 245],     # 11: Ciano brilhante
-    [245, 40, 30],      # 12: Vermelho brilhante
-    [245, 40, 245],     # 13: Magenta brilhante
-    [245, 235, 30],     # 14: Amarelo brilhante
-    [245, 245, 245]     # 15: Branco
+    [182, 182, 182],    # 8: Cinza claro
+    [45, 78, 245],      # 9: Azul brilhante
+    [42, 232, 50],      # 10: Verde brilhante
+    [35, 235, 245],     # 11: Ciano brilhante
+    [245, 48, 40],      # 12: Vermelho brilhante
+    [245, 45, 245],     # 13: Magenta brilhante
+    [245, 238, 35],     # 14: Amarelo brilhante
+    [248, 248, 248]     # 15: Branco
 ], dtype=np.uint8)
 
-# Paleta color32: 32 cores calibradas (5 bits/célula) com máxima distância perceptual
+# Paleta color32: 32 cores calibradas (5 bits/célula) com máxima distância perceptual e Ink Limiting
 PALETTE_COLOR32 = np.array([
     # 0: Preto
     [16, 16, 16],
-    # Escuros / Baixa Luminância (1..9)
-    [140, 20, 20],      # 1: Vermelho escuro
-    [150, 75, 16],      # 2: Laranja escuro / Marrom
-    [135, 135, 16],     # 3: Oliva / Amarelo escuro
-    [20, 140, 20],      # 4: Verde escuro
-    [16, 135, 110],     # 5: Teal escuro
-    [16, 135, 140],     # 6: Ciano escuro
-    [20, 30, 150],      # 7: Azul escuro
-    [90, 20, 145],      # 8: Roxo escuro
-    [145, 20, 135],     # 9: Vinho
+    # Escuros / Baixa Luminância (1..9) - piso suavizado para jato de tinta
+    [152, 34, 34],      # 1: Vermelho escuro
+    [160, 84, 28],      # 2: Laranja escuro / Marrom
+    [145, 145, 28],     # 3: Oliva / Amarelo escuro
+    [34, 150, 34],      # 4: Verde escuro
+    [28, 145, 118],     # 5: Teal escuro
+    [28, 145, 150],     # 6: Ciano escuro
+    [34, 42, 160],      # 7: Azul escuro
+    [100, 32, 155],     # 8: Roxo escuro
+    [155, 32, 145],     # 9: Vinho
     # Médios / Saturados (10..18)
-    [235, 30, 30],      # 10: Vermelho
-    [240, 125, 20],     # 11: Laranja
-    [240, 225, 20],     # 12: Amarelo
-    [130, 230, 20],     # 13: Lima
-    [25, 220, 35],      # 14: Verde
-    [25, 220, 230],     # 15: Ciano
-    [30, 80, 245],      # 16: Azul
-    [150, 40, 245],     # 17: Roxo
-    [240, 35, 220],     # 18: Magenta
+    [238, 42, 42],      # 10: Vermelho
+    [242, 130, 32],     # 11: Laranja
+    [242, 228, 28],     # 12: Amarelo
+    [135, 232, 32],     # 13: Lima
+    [36, 224, 45],      # 14: Verde
+    [34, 224, 232],     # 15: Ciano
+    [42, 86, 245],      # 16: Azul
+    [155, 50, 245],     # 17: Roxo
+    [242, 45, 224],     # 18: Magenta
     # Claros / Pastéis (19..27)
-    [250, 150, 165],    # 19: Rosa pastel
-    [250, 185, 135],    # 20: Pêssego pastel
-    [250, 245, 140],    # 21: Amarelo pastel
-    [150, 250, 165],    # 22: Menta pastel
-    [150, 245, 250],    # 23: Aqua pastel
-    [140, 190, 255],    # 24: Azul bebê
-    [195, 160, 255],    # 25: Lavanda
-    [250, 155, 245],    # 26: Orquídea
-    [200, 220, 140],    # 27: Verde chá
+    [250, 155, 170],    # 19: Rosa pastel
+    [250, 188, 140],    # 20: Pêssego pastel
+    [250, 245, 145],    # 21: Amarelo pastel
+    [155, 250, 170],    # 22: Menta pastel
+    [155, 245, 250],    # 23: Aqua pastel
+    [145, 194, 255],    # 24: Azul bebê
+    [198, 165, 255],    # 25: Lavanda
+    [250, 160, 245],    # 26: Orquídea
+    [204, 224, 145],    # 27: Verde chá
     # Escala de cinza neutra (28..31)
-    [75, 75, 75],       # 28: Chumbo
-    [135, 135, 135],    # 29: Cinza médio
-    [195, 195, 195],    # 30: Cinza claro
+    [78, 78, 78],       # 28: Chumbo
+    [138, 138, 138],    # 29: Cinza médio
+    [198, 198, 198],    # 30: Cinza claro
     [250, 250, 250]     # 31: Branco puro (usado também para preenchimento limpo)
 ], dtype=np.uint8)
 

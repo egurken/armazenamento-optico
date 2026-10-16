@@ -16,6 +16,7 @@ from datasheet.config import (
     DEFAULT_COPIES,
     DEFAULT_ECC_PERCENT,
     DEFAULT_CELL_PX,
+    DEFAULT_CELL_GAP,
     MODE_GRAY4,
     MODE_COLOR8,
     MODE_COLOR16,
@@ -74,6 +75,12 @@ def api_encode():
         cell_size = DEFAULT_CELL_PX
 
     try:
+        cell_gap = int(request.form.get("cell_gap", DEFAULT_CELL_GAP))
+        cell_gap = max(0, min(2, cell_gap))
+    except ValueError:
+        cell_gap = DEFAULT_CELL_GAP
+
+    try:
         copies = int(request.form.get("copies", DEFAULT_COPIES))
         copies = max(3, min(6, copies))
     except ValueError:
@@ -106,7 +113,8 @@ def api_encode():
             copies=copies,
             ecc_percent=ecc_percent,
             cell_size=cell_size,
-            show_text=show_text
+            show_text=show_text,
+            cell_gap=cell_gap
         )
 
         png_files = sorted([f for f in os.listdir(png_dir) if f.endswith(".png")])
@@ -116,7 +124,7 @@ def api_encode():
         first_img = load_image_any_path(os.path.join(png_dir, png_files[0]))
         meta = read_qr_from_image(first_img) if first_img is not None else None
 
-        layout = PageLayout(mode=mode, copies=copies, ecc_percent=ecc_percent, cell_px=cell_size)
+        layout = PageLayout(mode=mode, copies=copies, ecc_percent=ecc_percent, cell_px=cell_size, cell_gap=cell_gap)
         _, useful_chunk_bytes = calculate_page_capacity(layout)
 
         return jsonify({
@@ -129,6 +137,7 @@ def api_encode():
             "copies": copies,
             "ecc_percent": ecc_percent,
             "cell_size": cell_size,
+            "cell_gap": cell_gap,
             "raw_size": meta.raw_size if meta else os.path.getsize(input_path),
             "comp_size": meta.comp_size if meta else 0,
             "page_capacity": useful_chunk_bytes,
@@ -284,7 +293,7 @@ def api_decode():
                 first_err = detected_pages_info[0].get("error", "") if detected_pages_info else ""
                 hint = ""
                 if "danos físicos" in first_err or "Reed-Solomon" in first_err or "correção de erros" in first_err:
-                    hint = " Dica: para fotografias de folhas impressas com sombras/luz ambiente, recomendamos os modos de 8 Cores ou 4 Tons de Cinza com ponto de 4px ou 5px (o modo de 32 cores em 3px é de densidade microscópica e requer scanner de mesa para fidelidade cromática absoluta)."
+                    hint = " Dica: para impressoras jato de tinta em papel comum, ative o Isolamento Anti-Sangramento (1px ou 2px de borda branca) e utilize ponto de 4px a 6px no modo 8 Cores ou 4 Tons de Cinza."
                 elif "QR Code" in first_err:
                     hint = " Dica: certifique-se de que a folha inteira e o QR Code do cabeçalho estejam visíveis na imagem."
                 return jsonify({

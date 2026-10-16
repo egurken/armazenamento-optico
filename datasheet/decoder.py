@@ -1,9 +1,12 @@
 """
-Módulo decodificador: leitura de imagem/PDF, detecção de QR, calibração espectral,
-amostragem de células, votação de maioria e recomposição do arquivo.
+Módulo decodificador: leitura de imagem/PDF, detecção de QR, calibração espectral em micro-células,
+amostragem de células, cancelamento de interferência lateral 2D (Cross-Talk Cancellation),
+votação de maioria e recomposição do arquivo.
 """
 
 import os
+import io
+import math
 from typing import List, Tuple, Optional, Union
 import cv2
 import numpy as np
@@ -18,7 +21,6 @@ from datasheet.config import (
     CALIBRATION_STRIP_HEIGHT_PX,
     DEFAULT_ECC_PERCENT
 )
-import math
 from datasheet.metadata import PageMetadata, read_qr_from_image
 from datasheet.fiducials import rectify_page
 from datasheet.palette import get_palette, classify_pixels, symbols_to_bytes
@@ -27,9 +29,44 @@ from datasheet.redundancy import majority_vote
 from datasheet.chunker import PageAssembler
 
 
+def apply_unsharp_deconvolution(img_bgr: np.ndarray, amount: float = 1.35, sigma: float = 1.0) -> np.ndarray:
+    """
+    Aplica máscara de nitidez (Unsharp Mask / desconvolução óptica leve) para reverter
+    sangramento físico de tinta (ink bleed) e desfoque de lente entre células adjacentes.
+    """
+    blurred = cv2.GaussianBlur(img_bgr, (0, 0), sigmaX=sigma, sigmaY=sigma)
+    sharpened = cv2.addWeighted(img_bgr, 1.0 + amount, blurred, -amount, 0)
+    return sharpened
+
+
+def cancel_lateral_crosstalk(cell_pixels: np.ndarray, rows: int, cols: int, alpha: float = 0.09) -> np.ndarray:
+    """
+    Cancelamento de Interferência Lateral 2D (Cross-Talk Cancellation) no nível das células:
+    Desconta matematicamente a contaminação espectral (fração alpha) que vazou das 4 células
+    ortogonais vizinhas (cima, baixo, esquerda, direita) para o centro da célula (r, c):
+      X_est(r, c) = (Y(r, c) - alpha * (Y_up + Y_down + Y_left + Y_right)) / (1 - 4 * alpha)
+    """
+    if alpha <= 0.0:
+        return cell_pixels
+
+    grid = cell_pixels.reshape((rows, cols, 3)).astype(np.float32)
+    padded = np.pad(grid, ((1, 1), (1, 1), (0, 0)), mode="edge")
+    neighbors_sum = (
+        padded[:-2, 1:-1] +  # cima
+        padded[2:, 1:-1] +   # baixo
+        padded[1:-1, :-2] +  # esquerda
+        padded[1:-1, 2:]     # direita
+    )
+    denom = max(0.25, 1.0 - 4.0 * alpha)
+    decontaminated = (grid - alpha * neighbors_sum) / denom
+    return np.clip(decontaminated, 0, 255).astype(np.uint8).reshape(-1, 3)
+
+
 def sample_calibration_strip(rectified_bgr: np.ndarray, meta: PageMetadata, layout: PageLayout) -> np.ndarray:
     """
     Localiza e extrai as cores reais observadas na fita de calibração impressa.
+    Amostra os centros exatos das micro-células dentro de cada bloco da barra de calibração,
+    capturando a resposta espectral real das células de tamanho cell_px na impressora.
     Retorna paleta observada de shape (K, 3) em RGB.
     """
     calib_y = layout.grid_top + layout.grid_height_px + CALIBRATION_MARGIN_TOP_PX
@@ -38,21 +75,36 @@ def sample_calibration_strip(rectified_bgr: np.ndarray, meta: PageMetadata, layo
     calib_h = CALIBRATION_STRIP_HEIGHT_PX
 
     strip_crop = rectified_bgr[calib_y:calib_y + calib_h, calib_x:calib_x + calib_w]
-    # Converte para RGB
     strip_rgb = cv2.cvtColor(strip_crop, cv2.COLOR_BGR2RGB)
 
     canonical_palette = get_palette(meta.mode)
     num_colors = len(canonical_palette)
     swatch_w = calib_w / float(num_colors)
+    eff_cell = max(2, int(meta.cell_px))
 
     observed = []
     for i in range(num_colors):
         x1 = int(round(i * swatch_w))
         x2 = int(round((i + 1) * swatch_w))
-        # Pega a região central do bloco (evita bordas)
-        margin_x = max(2, (x2 - x1) // 5)
-        margin_y = max(2, calib_h // 5)
-        sample_patch = strip_rgb[margin_y:calib_h - margin_y, x1 + margin_x:x2 - margin_x]
+        pad_x = 2 if swatch_w >= 16 else 0
+        ix1 = min(x2, x1 + pad_x)
+        ix2 = max(ix1 + 1, x2 - pad_x)
+
+        avail_w = max(eff_cell, ix2 - ix1)
+        avail_h = max(eff_cell, calib_h - 4)
+        cols_c = max(1, avail_w // eff_cell)
+        rows_c = max(1, avail_h // eff_cell)
+
+        # Usa os blocos internos se houver >= 3 colunas/linhas, senão todos os centros de micro-células
+        r_start, r_end = (1, rows_c - 1) if rows_c >= 3 else (0, rows_c)
+        c_start, c_end = (1, cols_c - 1) if cols_c >= 3 else (0, cols_c)
+
+        cy = 2 + ((np.arange(r_start, r_end) + 0.5) * eff_cell).astype(int)
+        cx = ix1 + ((np.arange(c_start, c_end) + 0.5) * eff_cell).astype(int)
+        cy = np.clip(cy, 0, strip_rgb.shape[0] - 1)
+        cx = np.clip(cx, 0, strip_rgb.shape[1] - 1)
+        sample_patch = strip_rgb[np.ix_(cy, cx)]
+
         if sample_patch.size > 0:
             median_color = np.median(sample_patch, axis=(0, 1)).astype(np.uint8)
             observed.append(median_color)
@@ -99,8 +151,9 @@ def decode_page_image(img_bgr: np.ndarray) -> Tuple[PageMetadata, bytes]:
     Decodifica uma única folha escaneada ou fotografada:
     1. Leitura do QR Code de auto-configuração (antes ou após retificação).
     2. Retificação geométrica de perspectiva (homografia pelos 4 fiduciais).
-    3. Amostragem da barra de calibração espectral.
-    4. Amostragem da grade e classificação de símbolos (com busca fina de offset).
+    3. Amostragem da barra de calibração espectral em micro-células.
+    4. Amostragem da grade, cancelamento de interferência lateral (Cross-Talk Cancellation)
+       e classificação de símbolos.
     5. Desentrelaçamento 2D e correção de erros Reed-Solomon (ou votação de maioria).
     Retorna: (PageMetadata, chunk_bytes)
     """
@@ -125,7 +178,8 @@ def decode_page_image(img_bgr: np.ndarray) -> Tuple[PageMetadata, bytes]:
         cell_px=meta.cell_px,
         mode=meta.mode,
         copies=meta.copies,
-        ecc_percent=getattr(meta, 'ecc_percent', DEFAULT_ECC_PERCENT)
+        ecc_percent=getattr(meta, 'ecc_percent', DEFAULT_ECC_PERCENT),
+        cell_gap=getattr(meta, 'cell_gap', 0)
     )
 
     # 3. Calibração espectral
@@ -144,10 +198,33 @@ def decode_page_image(img_bgr: np.ndarray) -> Tuple[PageMetadata, bytes]:
             (1, 0), (-1, -1), (1, -1), (-2, -2)
         ]
         last_rs_error = None
-        for offset in candidate_offsets:
+
+        # Passagem 1: Amostragem direta e com Cancelamento de Interferência Lateral 2D (alpha = 0.0, 0.09, 0.14)
+        for alpha in (0.0, 0.09, 0.14):
+            for offset in candidate_offsets:
+                try:
+                    cell_pixels = sample_grid_cells(rectified, meta, layout, offset=offset)
+                    if alpha > 0.0:
+                        cell_pixels = cancel_lateral_crosstalk(
+                            cell_pixels, meta.grid_rows, meta.grid_cols, alpha=alpha
+                        )
+                    symbols = classify_pixels(cell_pixels, observed_palette, mode=meta.mode)
+                    raw_interleaved = symbols_to_bytes(symbols.tolist(), meta.mode, total_bytes=total_rs_bytes)
+                    chunk_bytes = decode_rs_interleaved(raw_interleaved, original_len=meta.chunk_len, ecc_percent=meta.ecc_percent)
+                    return meta, chunk_bytes
+                except Exception as e:
+                    last_rs_error = e
+
+        # Passagem 2: Desconvolução óptica por máscara de nitidez (Unsharp Mask) + Cross-Talk Cancellation
+        sharpened = apply_unsharp_deconvolution(rectified, amount=1.35, sigma=1.0)
+        observed_sharp = sample_calibration_strip(sharpened, meta, layout)
+        for offset in candidate_offsets[:6]:
             try:
-                cell_pixels = sample_grid_cells(rectified, meta, layout, offset=offset)
-                symbols = classify_pixels(cell_pixels, observed_palette, mode=meta.mode)
+                cell_pixels = sample_grid_cells(sharpened, meta, layout, offset=offset)
+                cell_pixels = cancel_lateral_crosstalk(
+                    cell_pixels, meta.grid_rows, meta.grid_cols, alpha=0.08
+                )
+                symbols = classify_pixels(cell_pixels, observed_sharp, mode=meta.mode)
                 raw_interleaved = symbols_to_bytes(symbols.tolist(), meta.mode, total_bytes=total_rs_bytes)
                 chunk_bytes = decode_rs_interleaved(raw_interleaved, original_len=meta.chunk_len, ecc_percent=meta.ecc_percent)
                 return meta, chunk_bytes
@@ -163,9 +240,6 @@ def decode_page_image(img_bgr: np.ndarray) -> Tuple[PageMetadata, bytes]:
         repeated_bytes = symbols_to_bytes(symbols.tolist(), meta.mode, total_bytes=total_repeated_bytes)
         chunk_bytes = majority_vote(repeated_bytes, original_len=meta.chunk_len, copies=meta.copies)
         return meta, chunk_bytes
-
-
-import io
 
 
 def extract_images_from_pdf(pdf_path: str) -> List[np.ndarray]:

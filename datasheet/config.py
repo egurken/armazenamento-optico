@@ -13,6 +13,7 @@ MODE_COLOR32 = "color32"  # 32 cores calibradas (5 bits/célula - Máxima densid
 
 SUPPORTED_MODES = [MODE_GRAY4, MODE_COLOR8, MODE_COLOR16, MODE_COLOR32]
 SUPPORTED_CELL_SIZES = [2, 3, 4, 5, 6]
+SUPPORTED_CELL_GAPS = [0, 1, 2]
 
 # Redundância (cópias legadas e Reed-Solomon ECC %)
 DEFAULT_COPIES = 5
@@ -31,6 +32,7 @@ PAGE_HEIGHT_A4 = 3508
 DEFAULT_GRID_COLS = 720
 DEFAULT_GRID_ROWS = 840
 DEFAULT_CELL_PX = 3
+DEFAULT_CELL_GAP = 0
 
 def get_grid_dimensions(cell_px: int) -> Tuple[int, int]:
     """
@@ -74,6 +76,7 @@ class PageLayout:
     copies: int = DEFAULT_COPIES
     ecc_percent: int = DEFAULT_ECC_PERCENT
     show_text: bool = True
+    cell_gap: int = DEFAULT_CELL_GAP
 
     def __post_init__(self):
         # Se cell_px for alterado e cols/rows ainda forem os padrões, recalcula automaticamente

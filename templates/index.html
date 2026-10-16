@@ -28,6 +28,12 @@
       border-radius: 3px;
       display: inline-block;
     }
+    .crisp-pixel {
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col selection:bg-cyan-500 selection:text-black">
@@ -244,9 +250,9 @@
                   <i data-lucide="grid" class="w-4 h-4 text-cyan-400"></i>
                   <label class="text-xs font-semibold uppercase tracking-wider text-slate-300">Tamanho do Ponto (Resolução da Célula)</label>
                 </div>
-                <span id="cellSizeBadge" class="text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">3 px (Padrão Recomendado)</span>
+                <span id="cellSizeBadge" class="text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">3 px (Padrão A4 - Máxima Capacidade)</span>
               </div>
-              <div class="grid grid-cols-4 gap-2 mt-2">
+              <div class="grid grid-cols-5 gap-2 mt-2">
                 <label class="cursor-pointer">
                   <input type="radio" name="cellSize" value="2" class="hidden peer" onchange="setCellSize(2)">
                   <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 text-center transition">
@@ -259,7 +265,7 @@
                   <input type="radio" name="cellSize" value="3" checked class="hidden peer" onchange="setCellSize(3)">
                   <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 text-center transition">
                     <span class="font-mono font-bold text-xs text-white block">3 px</span>
-                    <span class="text-[10px] text-emerald-400 font-semibold block">Padrão A4</span>
+                    <span class="text-[10px] text-slate-400 block">Padrão A4</span>
                     <span class="text-[9px] text-cyan-400 font-mono block mt-0.5">720 cols</span>
                   </div>
                 </label>
@@ -267,7 +273,7 @@
                   <input type="radio" name="cellSize" value="4" class="hidden peer" onchange="setCellSize(4)">
                   <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 text-center transition">
                     <span class="font-mono font-bold text-xs text-white block">4 px</span>
-                    <span class="text-[10px] text-slate-400 block">Alta Tolerância</span>
+                    <span class="text-[10px] text-emerald-400 font-semibold block">Nitidez Ideal</span>
                     <span class="text-[9px] text-cyan-400 font-mono block mt-0.5">540 cols</span>
                   </div>
                 </label>
@@ -277,6 +283,49 @@
                     <span class="font-mono font-bold text-xs text-white block">5 px</span>
                     <span class="text-[10px] text-slate-400 block">Fácil Leitura</span>
                     <span class="text-[9px] text-cyan-400 font-mono block mt-0.5">432 cols</span>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="cellSize" value="6" class="hidden peer" onchange="setCellSize(6)">
+                  <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 text-center transition">
+                    <span class="font-mono font-bold text-xs text-white block">6 px</span>
+                    <span class="text-[10px] text-emerald-400 block">Ultra Nítido</span>
+                    <span class="text-[9px] text-cyan-400 font-mono block mt-0.5">360 cols</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Seletor de Isolamento Anti-Sangramento (Borda Branca entre Células) -->
+            <div class="mt-5 pt-5 border-t border-slate-800">
+              <div class="flex justify-between items-center mb-2">
+                <div class="flex items-center gap-1.5">
+                  <i data-lucide="focus" class="w-4 h-4 text-emerald-400"></i>
+                  <label class="text-xs font-semibold uppercase tracking-wider text-slate-300">Isolamento Anti-Sangramento (Evita Sobreposição de Cores)</label>
+                </div>
+                <span id="cellGapBadge" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Corner Relief Ativo (Zero Perda)</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mb-2.5">Cria uma trilha branca de contenção entre os pontos coloridos para impedir que a tinta líquida se misture com a cor vizinha no papel.</p>
+              <div class="grid grid-cols-3 gap-2">
+                <label class="cursor-pointer">
+                  <input type="radio" name="cellGap" value="0" checked class="hidden peer" onchange="setCellGap(0)">
+                  <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 text-center transition">
+                    <span class="font-mono font-bold text-xs text-white block">Corner Relief (0 px)</span>
+                    <span class="text-[10px] text-emerald-400 font-semibold block">Padrão L4260 (100% Cap.)</span>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="cellGap" value="1" class="hidden peer" onchange="setCellGap(1)">
+                  <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 text-center transition">
+                    <span class="font-mono font-bold text-xs text-white block">1 px Borda Branca</span>
+                    <span class="text-[10px] text-slate-400 block">Isolamento extra</span>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="cellGap" value="2" class="hidden peer" onchange="setCellGap(2)">
+                  <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 text-center transition">
+                    <span class="font-mono font-bold text-xs text-white block">2 px Borda Dupla</span>
+                    <span class="text-[10px] text-cyan-400 block">Máxima Separação (≥4px)</span>
                   </div>
                 </label>
               </div>
@@ -427,7 +476,7 @@
             <div>
               <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Pré-visualização da Folha Impressa</span>
               <div class="relative rounded-xl overflow-hidden border border-slate-700 bg-white cursor-pointer group" onclick="openPreviewModal()">
-                <img id="resPreviewImg" src="" alt="Prévia da Folha" class="w-full h-72 object-cover object-top group-hover:scale-105 transition-transform duration-300">
+                <img id="resPreviewImg" src="" alt="Prévia da Folha" class="crisp-pixel w-full h-72 object-cover object-top group-hover:scale-105 transition-transform duration-300">
                 <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium gap-1.5 backdrop-blur-sm">
                   <i data-lucide="zoom-in" class="w-4 h-4"></i>
                   <span>Clique para ampliar</span>
@@ -547,7 +596,7 @@
       <button class="absolute top-4 right-4 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full p-2" onclick="closePreviewModal()">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
-      <img id="modalPreviewImg" src="" alt="Folha Completa" class="max-h-[85vh] rounded-xl object-contain">
+      <img id="modalPreviewImg" src="" alt="Folha Completa" class="crisp-pixel max-h-[85vh] rounded-xl object-contain">
     </div>
   </div>
 
@@ -655,21 +704,37 @@
       lucide.createIcons();
     }
 
-    // Controle de Tamanho da Célula (Densidade)
+    // Controle de Tamanho da Célula (Densidade) e Isolamento Anti-Sangramento
     let currentCellSize = 3;
+    let currentCellGap = 0;
+
     function setCellSize(val) {
-      currentCellSize = parseInt(val) || 3;
+      currentCellSize = parseInt(val) || 4;
       const badge = document.getElementById('cellSizeBadge');
       const labels = {
         '2': '2 px (Alta Densidade - 1080 cols)',
         '3': '3 px (Padrão A4 - 720 cols)',
-        '4': '4 px (Alta Tolerância - 540 cols)',
-        '5': '5 px (Fácil Leitura - 432 cols)'
+        '4': '4 px (Alta Nitidez Recomendada - 540 cols)',
+        '5': '5 px (Fácil Leitura - 432 cols)',
+        '6': '6 px (Ultra Nítido - 360 cols)'
       };
       if (badge) {
         badge.textContent = labels[val] || `${val} px`;
       }
       calculateRealtimeCapacity();
+    }
+
+    function setCellGap(val) {
+      currentCellGap = parseInt(val) || 0;
+      const badge = document.getElementById('cellGapBadge');
+      const labels = {
+        '0': 'Corner Relief Ativo (Zero Perda)',
+        '1': '1 px Borda Branca (Ativo)',
+        '2': '2 px Borda Dupla (Isolamento Máximo)'
+      };
+      if (badge) {
+        badge.textContent = labels[val] || `${val} px`;
+      }
     }
 
     // Controle de Redundância Reed-Solomon (ECC)
@@ -849,6 +914,7 @@
       formData.append('copies', copies);
       formData.append('ecc_percent', eccPercent);
       formData.append('cell_size', currentCellSize);
+      formData.append('cell_gap', currentCellGap);
       formData.append('show_text', showText ? "true" : "false");
 
       try {
@@ -866,7 +932,8 @@
           document.getElementById('resFileId').textContent = data.file_id;
           document.getElementById('resFileName').textContent = data.file_name;
           if (document.getElementById('resModeCell')) {
-            document.getElementById('resModeCell').textContent = `${data.mode} (${data.cell_size || currentCellSize}px)`;
+            const gapInfo = (data.cell_gap !== undefined ? data.cell_gap : currentCellGap);
+            document.getElementById('resModeCell').textContent = `${data.mode} (${data.cell_size || currentCellSize}px / gap ${gapInfo}px)`;
           }
           if (document.getElementById('resEcc')) {
             document.getElementById('resEcc').textContent = `${data.ecc_percent || eccPercent}% ECC (2D)`;

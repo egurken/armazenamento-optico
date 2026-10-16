@@ -97,6 +97,11 @@
       height: 100%;
       object-fit: contain;
       display: block;
+      /* CRÍTICO: Impede interpolação bilinear/bicúbica do navegador ao imprimir */
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
     }
 
     @media print {
@@ -112,8 +117,8 @@
         gap: 0 !important;
       }
       .page-sheet {
-        width: 100vw !important;
-        height: 100vh !important;
+        width: 210mm !important;
+        height: 297mm !important;
         margin: 0 !important;
         padding: 0 !important;
         box-shadow: none !important;
@@ -123,13 +128,15 @@
       .page-sheet img {
         width: 100% !important;
         height: 100% !important;
+        image-rendering: crisp-edges !important;
+        image-rendering: pixelated !important;
       }
     }
   </style>
 </head>
 <body>
   <div class="toolbar">
-    <span>{{ pages|length }} Folha(s) A4 Prontas</span>
+    <span>{{ pages|length }} Folha(s) A4 Prontas (Modo Pixel-Perfect)</span>
     <button class="btn-print" onclick="window.print()">
       🖨️ Abrir Diálogo de Impressão (Ctrl + P)
     </button>
